@@ -1,0 +1,357 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0055)http://www.senocular.com/flash/tutorials/transformtool/ -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	
+	<title>senocular.com - Transform Tool Developer Guide</title>
+	<link href="./senocular.com - Transform Tool Developer Guide_files/standard.css" rel="stylesheet" type="text/css">
+	<link rel="icon" type="image/png" href="http://www.senocular.com/images/icons/favicon.png">
+	<link href="./senocular.com - Transform Tool Developer Guide_files/tutorial.css" rel="stylesheet" type="text/css">
+	
+</head>
+<body>
+<div class="header-w"><b1></b1>
+<div class="header">
+	<div class="iden">
+		<h1><a href="http://www.senocular.com/"><span class="text">senocular.com</span></a></h1>
+	</div>
+	<div class="nav">
+		<ul class="menu">
+			<li class="topic"><h4>Flash</h4>
+				<ul>
+					<li><a href="http://www.senocular.com/flash/source/" title="Flash Source Files">Source Files</a></li>
+					<li><a href="http://www.senocular.com/flash/actionscript/" title="Flash ActionScript">ActionScript</a></li>
+					<li><a href="http://www.senocular.com/flash/extensions/" title="Flash Extensions">Extensions</a></li>
+					<li><a href="http://www.senocular.com/flash/tutorials/" title="Flash Tutorials">Tutorials</a></li>
+				</ul>
+			</li>
+			<li class="topic"><h4>Fireworks</h4>
+				<ul>
+					<li><a href="http://www.senocular.com/fireworks/source/" title="Fireworks Source Files">Source Files</a></li>
+					<li><a href="http://www.senocular.com/fireworks/extensions/" title="Fireworks Extensions">Extensions</a></li>
+					<li><a href="http://www.senocular.com/fireworks/tutorials/" title="Fireworks Tutorials">Tutorials</a></li>
+				</ul>
+			</li>
+			<li class="topic"><h4>Dreamweaver</h4>
+				<ul>
+					<li><a href="http://www.senocular.com/dreamweaver/extensions/" title="Dreamweaver Extensions">Extensions</a></li>
+					<li><a href="http://www.senocular.com/dreamweaver/tutorials/" title="Dreamweaver Tutorials">Tutorials</a></li>
+				</ul>
+			</li>
+			<li class="topic"><h4>Other</h4>
+				<ul>
+					<li><a href="http://www.senocular.com/about/" title="About">About</a></li>
+					<li><a href="http://www.senocular.com/contact/" title="Contact">Contact</a></li>
+					<li><a href="http://www.senocular.com/smilies/" title="Smilies">Smilies</a></li>
+				</ul>
+			</li>
+		</ul>
+	</div>
+	<p class="about">
+		Tutorials, extensions, and source files for ActionScript, Flash, and other Adobe products.
+	</p>
+	<div class="foot">&nbsp;</div>
+</div>
+</div><div class="content-w">
+<div class="content">
+<div class="tutorial">
+<style type="text/css">
+table.controlsets td {
+	text-align:center;
+}
+</style>
+<div style="background-color:#FFC; border:1px solid red; padding:1em; color:red; text-align:center; font-weight:bold;">
+	This is a work in progress
+</div>
+
+<div style="border:1px solid black; padding:.5em; margin-top:1em;">
+<h3>Updates</h3>
+<ul>
+	<li>2010.12.07
+		<ul>
+			<li>Posted this document. It is not final and will be updated periodically over time until the final Transform Tool release</li>
+			<li>Source code <a href="http://www.senocular.com/flash/tutorials/transformtool/src/transformtool_2010-12-07.zip">build 2010.12.07 (beta) available</a></li>
+		</ul>
+	</li>
+	</ul>
+<h4>Known Issues</h4>
+<ul>
+	<li>No position restrictions implemented. This was going to be left to the user, but it would help to include with the tool</li>
+	<li>Performing certain operations during control usage (while dragging the mouse) can result in commits which break the transformation process. What would be the correct workflow for working with the tool while processing user interaction?</li>
+	<li>No defined workflow for target object-specific behaviors, for example if one object should behave differently in the Transform Tool compared to others. Separate tools could be used, but is that the best solution?</li>
+	<li>No direct support for multiple-object transforms (get around this by nesting multiple objects into a single container)</li>
+	<li>Flex support has not yet been tested</li>
+   	<li>Textfields do not scale properly</li>
+</ul>
+</div>
+<h1>Transform Tool Developer Guide</h1>
+<p>This document describes how to develop for and use the Transform Tool provided here on senocular.com. The Transform Tool is an ActionScript-based component that provides visual controls for manipulating the shape and position of display objects on the screen.</p>
+<h3 id="BasicDesignandUsage">Basic Design and Usage</h3>
+<p>The Transform Tool is a display object defined by the <a href="http://www.senocular.com/flash/tutorials/transformtool/#TransformToolClass">TransformTool class</a>. It works with one or more child  display objects known as <a href="http://www.senocular.com/flash/tutorials/transformtool/#Controls">controls</a> - collectively within a Transform Tool known as a <a href="http://www.senocular.com/flash/tutorials/transformtool/#ControlSet">control set</a> - to define how the tool is used and what within a target object can be transformed (scale, rotation, etc).</p>
+<p>The following example shows a very simple usage of the Transform Tool.</p>
+<pre><i>// import for the Transform Tool classes used</i>
+import com.senocular.display.transform.*;
+<i>
+// create a box object to interact with</i>
+var box:Sprite = new Sprite();
+addChild(box);
+box.graphics.beginFill(0xAACCDD);
+box.graphics.drawRect(-50, -50, 100, 100);
+box.x = 100;
+box.y = 100;
+
+<i>// create the Transform Tool</i>
+var tool:TransformTool = new TransformTool(new ControlSetStandard());
+addChild(tool);
+
+<i>// select the box with the transform tool when clicked. 
+// deselect when clicking on the stage</i>
+box.addEventListener(MouseEvent.MOUSE_DOWN, tool.select);
+stage.addEventListener(MouseEvent.MOUSE_DOWN, tool.deselect);</pre>
+<p class="image"><img src="./senocular.com - Transform Tool Developer Guide_files/screenshothelloworld.png" width="312" height="358" alt="transform tool hello world "><br>
+	Transform Tool example SWF
+</p>
+<p>Breaking it down:</p>
+<pre>import com.senocular.display.transform.*;</pre>
+<p>This imports the classes used by the script that are part of the classes used by the Transform Tool. All Transform Tool classes exist in this package. This example uses two: TransformTool and ControlSetStandard.</p>
+<pre>var box:Sprite = new Sprite();
+addChild(box);
+box.graphics.beginFill(0xAACCDD);
+box.graphics.drawRect(-50, -50, 100, 100);
+box.x = 100;
+box.y = 100;</pre>
+<p>A simple box Sprite is made and added to the screen. For this example, it represents an object to interact with using the tool.</p>
+<pre>var tool:TransformTool = new TransformTool(new ControlSetStandard());
+addChild(tool);</pre>
+<p>An instance of the TransformTool class is created and added to the display list.  Most of the interactions with the Transform Tool will happen through an instance of the TransformTool class. </p>
+<p>Passed in to the TransformTool constructor is an instance of ControlSetStandard. This defines what controls make up the Transform Tool, whether it be scaling controls, rotation controls, skewing controls, or any combination or those or any other  control. The Transform Tool comes with a number of pre-defined controls and control sets, but you have the option of defining your own as well. The ControlSetStandard class creates a control set that is similar to the one found in the Flash Professional authoring tool but without the skewing controls.</p>
+<pre>box.addEventListener(MouseEvent.MOUSE_DOWN, tool.select);
+stage.addEventListener(MouseEvent.MOUSE_DOWN, tool.deselect);</pre>
+<p>Here, event listeners are set up to handle object selection with the Transform Tool. Using the built-in select handler within the TransformTool instance, the box will be automatically assigned the target of the Transform Tool when clicked. Similarly, when the stage is clicked (as in, not the box), the box is deselected or, more specifically, the tool's target is removed.</p>
+<h3 id="TransformToolClass">TransformTool Class</h3>
+<p>The TransformTool class is the main class of the Transform Tool. It represents the Transform Tool itself and is responsible for:</p>
+<ul>
+	<li>Target selection</li>
+	<li>Applying transformations</li>
+	<li>Restrictions (min/max for target)</li>
+	<li>Control sets</li>
+</ul>
+<p>TransformTool instances are display objects. When created, they will need to be added to the display list. </p>
+<pre>var tool:TransformTool = new TransformTool();
+addChild(tool);</pre>
+<p>They should be added to the same container as the target objects they will interact with.</p>
+<p>Alone, a TransformTool instance is graphically inept. All visual and interactive components of the tool are represented through <a href="http://www.senocular.com/flash/tutorials/transformtool/#Controls">controls</a>. When created, a TransformTool instance is typically created with a <a href="http://www.senocular.com/flash/tutorials/transformtool/#ControlSet">control set</a> defining all of the controls that are contained within the tool.</p>
+<pre><i></i>var tool:TransformTool = new TransformTool(new ControlSetStandard());
+
+<i>// or</i>
+
+var tool:TransformTool = new TransformTool();
+tool.controls = new ControlSetStandard();</pre>
+<p>To be able to transform another display object on the screen, the Transform Tool must target that object. This can be done by setting the <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#target">TransformTool.target</a> property. You can also use the <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#setTarget()">TransformTool.setTarget()</a> method. The setTarget method includes another parameter for an event that indicates which event caused the selection to occur. This event is used by some controls like the ControlMove to begin moving a target object as soon as the mouse is clicked on it.</p>
+<pre>tool.target = myObjectToTransform;
+
+<i>// or</i>
+
+tool.setTarget(myObjectToTransform, myCurrentEvent);</pre>
+<p>To remove a target from the control of the Transform Tool, set the target of the TransformTool instance to null. This can be done through the target property or the setTarget method</p>
+<pre>tool.target = null;
+
+<i>// or</i>
+
+tool.setTarget(null);</pre>
+<p>The TransformTool class contains helper selection handlers, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#select()">TransformTool.select()</a> and <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#deselect()">TransformTool.deselect()</a>, that work with mouse events that make object selection easy. Assign the select handler to mouse event listeners on objects you want to select (or a parent of those objects), and the deselect handler to mouse event listeners on objects you want to cause a deselect.</p>
+<pre>myObjectToTransform.addEventListener(MouseEvent.MOUSE_DOWN, tool.select);
+stage.addEventListener(MouseEvent.MOUSE_DOWN, tool.deselect);</pre>
+<p>The select handler will automatically set the target and target event through setTarget using either event.target or event.currentTarget depending on which is located within the same parent as the tool itself. The deselect handler will  set the target to null.</p>
+<p>When a target is selected, by default, it will automatically raise the target to the top of the display list in its parent (though not above the Transform Tool itself). This is an option that can be toggled through the <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#autoRaise">TransformTool.autoRaise</a> property. </p>
+<p>It is possible to have the Transform Tool and the objects meant to be transformed in different parent display object containers. These containers should, however, be located in the same global position so that the Transform Tool would correctly draw in the expected location. When this is the case, the select handler will not function and you will need to use a custom approach to target object selection. Additionally, autoRaise will only be able to raise objects within their own containers display list which may or may not place them above other objects if not in the same container.</p>
+<h4 id="Restrictions">Restrictions</h4>
+<p>Restrictions allow you to limit the transformations being applied to target objects by the Transform Tool. Restrictions are represented by properties in the TransformTool class. They include:</p>
+<ul>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#minWidth">minWidth</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#maxWidth">maxWidth</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#minScaleX">minScaleX</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#maxScaleX">maxScaleX</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#minHeight">minHeight</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#maxHeight">maxHeight</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#minScaleY">minScaleY</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#maxScaleY">maxScaleY</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#negativeScaling">negativeScaling</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#minRotation">minRotation</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#maxRotation">maxRotation</a></li>
+</ul>
+<p>There are two types of restrictions, scaling and rotation. Scaling restrictions include min and max limits for width, height and scale. Either or both can be used to restrict an object's size. When both are specified, the limit  passed first is used. For example if an object has an initial width of 100px and is set as the target of a Transform Tool that has a minWidth of 100 and a minScaleX of 0.5 (50%), the Transform Tool will not scale the object below 100px in size restricting to the minWidth. If minWidth was 50 and minScaleX was 1.0 (100%), the object will still not scale the object below 100px, but this time because of minScaleX.</p>
+<p>Flash usually measures width and height of an object entirely in the parent coordinate space without respecting the current transform (namely rotation) of that object. This can create conflicting data when dealing with both rotation and size. For example, after rotating a 100x100 px square 45 degrees, the reported width and height in Flash is no longer 100 px. Instead, it becomes something closer to 141 px. The Transform Tool, on the other hand, determines size based relatively on the target's  transformed local x and y axes, but within the parent object's coordinate space. This allows an object to have the same size irrespective of rotation.</p>
+<p class="image"><img src="./senocular.com - Transform Tool Developer Guide_files/widthafterrotation.png" width="393" height="165" alt="flash width vs transform tool width"></p>
+<p>Scaling restrictions also use a non-min or max Boolean option called negativeScaling. This determines whether or not target objects can be given negative scale. When true, negative scaling is allowed, that is, an object can be scaled so that it becomes mirrored, or a reversed image of itself. When false, this negative scaling is not permitted. This option can cause some complications with rotation, but for normal Transform Tool usage, it's not something you have to worry about. When you need to be concerned is when <a href="http://www.senocular.com/flash/tutorials/transformtool/#CreatingCustomControls">Creating Custom Controls</a>.</p>
+<p class="image"><img src="./senocular.com - Transform Tool Developer Guide_files/negativetransforms.png" width="192" height="186" alt="negative transforms"></p>
+<p>Rotation restrictions allow an object's rotation to be bound between two different angles using minRotation and maxRotation. When restriction rotation between two angles, there are two different ranges rotation can be limited. Which range depends on which value is greater, minRotation or maxRotation. </p>
+<p class="image"><img src="./senocular.com - Transform Tool Developer Guide_files/rotationranges.png" width="384" height="223" alt="ranges of rotation"><br>
+	The range or restricted rotation depends on which (min or max) is greater
+</p>
+<h3 id="ControlSets">Control Sets</h3>
+<p>Control sets define what interactive components (controls) make up the Transform Tool. They are assigned to the TransformTool through the controls property or the controls parameter of the TransformTool constructor. </p>
+<pre>var controlSet:ControlSetStandard = new ControlSetStandard();
+
+var tool:TransformTool = new TransformTool(controlSet);
+
+<i>// or</i>
+
+tool.controls = controlSet;</pre>
+<p>Control sets are, themselves, nothing more than arrays where each element is an interactive control. Each of these controls become a direct child of the TransformTool instance. Control sets are designed specifically for convenience. They allow all controls of a Transform Tool to be neatly wrapped into a single class instance. All controls could otherwise be added to a TransformTool instance individually using addChild. The process of setting TransformTool.controls to a control set instance simply makes this process easier by handling the addChild calls internally.</p>
+<div class="note">
+<h4>Note: Dynamic TransformTool.controls</h4>
+<p>The value assigned to TransformTool.controls is not the same that is returned. TransformTool.controls is dynamically generated based on the current state of the display list of the TransformTool instance. If a child object as added to a TransformTool instance after controls was set, the new value of controls would be a new array with that child object included.</p>
+</div>
+<p>The Transform Tool comes with a number of pre-defined control sets defined in Array classes such as ControlSetStandard, but control sets can also be defined manually through similar Array subclasses or standard ActionScript arrays that contain any combination of control instances.</p>
+<pre><i></i>var customSet:Array = [ new ControlOrigin(), new ControlMove() ];
+var tool:TransformTool = new TransformTool(customSet);</pre>
+<p>At any point in time, you can change the controls within a Transform Tool to another set or selectively add or remove controls on an individual basis.</p>
+<p>The control sets included with the Transform Tool are as follows:</p>
+<table class="controlsets"><tbody><tr>
+	<td><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlSetStandard.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlsetstandard.png" width="130" height="130" alt="standard"><br>
+		ControlSetStandard</a></td>
+	<td><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlSetScaleSides.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlsetscalesides.png" width="130" height="130" alt="scale sides"><br>
+		ControlSetScaleSides</a></td>
+	<td><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlSetSidesCornersNoCursor.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlsetsidescornersnocursor.png" width="130" height="130" alt="scale sides rotate corners no cursor"><br>
+ControlSetSidesCornersNoCursor</a></td>
+</tr><tr>
+	<td><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlSetFull.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlsetfull.png" width="130" height="131" alt="full"><br>ControlSetFull</a></td>
+	<td><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlSetScaleFullRotateHandle.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlsetfullscalerotatehandle.png" width="130" height="130" alt="full scale rotate handle"><br>
+ControlSetScaleFullRotateHandle</a></td>
+	<td><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlSetScaleCorners.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlsetscalefullnocursor.png" width="130" height="130" alt="scale full no cursor"><br>
+ControlSetScaleFullNoCursor</a></td>
+</tr><tr>
+	<td><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlSetScaleCorners.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlsetscalecorners.png" width="130" height="130" alt="scale corners"><br>
+		ControlSetScaleCorners</a></td>
+	<td><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlSetScaleSidesRotateCorners.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlsetscalesidesrotatecorners.png" width="130" height="130" alt="scale sides rotate corners"><br>
+ControlSetScaleSidesRotateCorners</a></td>
+	<td> </td>
+</tr></tbody></table>
+<p id="Controls">Use these control sets as a guide for making your own.</p>
+<h3>Controls</h3>
+<p>Control objects are display objects that, as children of a TransformTool instance, provide visuals and a point of interaction for manipulating the transformation defined by that tool. </p>
+<p>Each control works individually to perform a specific task, such as scaling the Transform Tool (and it's target) or providing a means of moving the registration point. Some controls provide no interaction and instead simply serve as visuals. The ControlBorder control class, for example, simply draws a line around the border of the Transform Tool's target object.</p>
+<p>Controls available with the Transform Tool include:</p>
+<ul>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlMove.html">ControlMove</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlRegistration.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlregistration.png" alt="control registration" width="18" height="18" align="absmiddle"></a> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlRegistration.html">ControlRegistration</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlUVScale.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlscale.png" alt="control scale" width="18" height="18" align="absmiddle"></a> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlUVScale.html">ControlUVScale</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlUVRotate.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlrotate.png" alt="control rotate" width="18" height="18" align="absmiddle"></a> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlUVRotate.html">ControlUVRotate</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlUVSkewBar.html">ControlUVSkewBar</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlHiddenMultifunction.html">ControlHiddenMultifunction</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlReset.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlreset.png" alt="control reset" width="18" height="18" align="absmiddle"></a> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlReset.html">ControlReset</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlOrigin.html"><img src="./senocular.com - Transform Tool Developer Guide_files/controlorigin.png" alt="control origin" width="18" height="18" align="absmiddle"></a> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlOrigin.html">ControlOrigin</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlBorder.html">ControlBorder</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlBoundingBox.html">ControlBoundingBox</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlGhostOutline.html">ControlGhostOutline</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlConnector.html">ControlConnector</a></li>
+	<li><a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlCursor.html">ControlCursor</a></li>
+</ul>
+<p>Each of these exist in one or more control sets other than ControlHiddenMultifunction. This particular control works as as a single, standalone control that can move, scale, and rotate an object without the need for any other, additional controls. Instead of existing within a set, it can just be added to the Transform Tool individually.</p>
+<pre>var tool:TransformTool = new TransformTool();
+addChild(new ControlHiddenMultifunction());</pre>
+<p>Different combinations of CTRL, SHIFT, and ALT change the behavior of this control determining if a target object is moved, scaled, rotated, or having its registration point changed.</p>
+<p>Other control types are usually used in combination with one or more additional controls. When using multiple controls in combination, use of control sets become more practical.</p>
+<h4>Control Styling</h4>
+<p>The controls included with the Transform Tool are each drawn dynamically. Basic styling options that give users some simple control over their default look and style. Most controls support the <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Control.html#fillColor">Control.fillColor</a>, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Control.html#fillAlpha">Control.fillAlpha</a>, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Control.html#lineColor">Control.lineColor</a>, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Control.html#lineAlpha">Control.lineAlpha</a>, and <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Control.html#lineThickness">Control.lineThickness</a> properties, each of which allows you to determine how the control appears on the screen when drawn.</p>
+<p>Control drawing occurs once a control is added to a TransformTool instance. If you change a styling property of a control that is already within a Transform Tool, you will need to force the control to redraw itself using the <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Control.html#draw()">Control.draw()</a> method.</p>
+<p>[TODO: example]</p>
+<p>Many controls will also allow you to use custom graphics in place of their dynamically drawn graphics. These controls check for the existence of a child display object in their display list. If present, they do not draw themselves normally, instead assuming the child display object will represent their graphic appearance.</p>
+<p>[TODO: example]</p>
+<p>Controls that do not allow this kind of styling are those which require to be dynamically drawn, such as ControlBorder and ControlBoundingBox.</p>
+<h3 id="CursorManagement">Cursors</h3>
+<p>Transform Tool cursors are defined by controls and regulated by the TransformTool class. Controls inform the  Transform Tool which cursor is to be used when a cursor is required. The Transform Tool then dispatches a CURSOR_CHANGED event indicating that there was a change in the cursor state of the tool. </p>
+<p>Cursors themselves are DisplayObject instances. They represent what display object is to be used to represent the cursor when a cursor is to be displayed. Cusors included with the Transform Tool are:</p>
+<ul>
+	<li><img src="./senocular.com - Transform Tool Developer Guide_files/cursormove.png" alt="cursor move" width="22" height="20" align="absmiddle"> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/CursorMove.html">CursorMove</a></li>
+	<li><img src="./senocular.com - Transform Tool Developer Guide_files/cursorregistration.png" alt="cursor registration" width="22" height="16" align="absmiddle"> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/CursorRegistration.html">CursorRegistration</a></li>
+	<li><img src="./senocular.com - Transform Tool Developer Guide_files/cursorrotate.png" alt="cursor rotate" width="22" height="20" align="absmiddle"> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/CursorRotate.html">CursorRotate</a></li>
+	<li><img src="./senocular.com - Transform Tool Developer Guide_files/cursorscale.png" alt="cursor scale" width="22" height="19" align="absmiddle"> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/CursorScale.html">CursorScale</a></li>
+	<li><img src="./senocular.com - Transform Tool Developer Guide_files/cursorskew.png" alt="cursor skew" width="22" height="18" align="absmiddle"> <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/CursorSkew.html">CursorSkew</a></li>
+</ul>
+<p>TransformTool instances do not display these objects on their own. Instead, they rely on external listeners of the CURSOR_CHANGED event to handle the displaying of cursors. The <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlCursor.html">ControlCursor</a> control will do this automatically for you if used as a control of the Transform Tool. Many control sets include this control to display cursor objects, though you may also decide to manage cursors on your own by listening for CURSOR_CHANGED without the ControlCursor control.</p>
+<p>Controls included with the Transform Tool of the type <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlInteractive.html">ControlInteractive</a> each use a <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlInteractive.html#cursor">ControlInteractive.cursor</a> property to define their cursors. They have no default value; rather, control sets define which cursors are used by which controls.</p>
+<h4>Cursor Styling</h4>
+<p>Cursors styling mirrors that used by the standard Transform Tool controls. They  contain similar styling properties: <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Cursor.html#fillColor">Cursor.fillColor</a>, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Cursor.html#fillAlpha">Cursor.fillAlpha</a>, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Cursor.html#lineColor">Cursor.lineColor</a>, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Cursor.html#lineAlpha">Cursor.lineAlpha</a>, and <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Cursor.html#lineThickness">Cursor.lineThickness</a>; and are drawn using the <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/Cursor.html#draw()">Cursor.draw()</a> method. Child display objects can also be used in place of their dynamic graphics.</p>
+<p>[TODO: example]</p>
+<h3 id="RegistrationManagement">Registration Management</h3>
+<p>Display objects in Flash Player do not  have individual registration points. All transformations are  based around the (0,0) coordinate location of their local coordinate space. The Flash Professional authoring tool provides a registration point for timeline-based animations, as seen in its own free Transform Tool, but this is lost once the SWF is compiled as that registration point is an authoring-time only feature.</p>
+<p>The TransformTool class simulates its own registration point. This can be seen and modified using the <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/ControlRegistration.html">ControlRegistration</a> control which is in many of the control set classes that ship with the Transform Tool. The <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/RegistrationManager.html">RegistrationManager</a> class is used to keep track of registration points. The RegistrationManager class defines registration point defaults and stores the locations of altered registration points in memory so that they can be recalled again later.</p>
+<p>Every TransformTool instance has an instance of a RegistrationManager, though multiple TransformTool instances can share the same RegistrationManager. If working with multiple TransformTool instances, it may be necessary to share registration managers so that a single object doesn't show different registration points depending on which tool is interacting with it.</p>
+<pre>var tool1:TransformTool = new TransformTool(new ControlSetStandard());
+var tool2:TransformTool = new TransformTool(new ControlSetFull(), tool1.registrationManager);</pre>
+<p>Registration points normally default to the (0, 0) local coordinate location of target objects, but using the registration manager, they can be elsewhere using the <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/RegistrationManager.html#defaultXY">RegistrationManager.defaultXY</a> or <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/RegistrationManager.html#defaultUV">RegistrationManager.defaultUV</a> properties.</p>
+<h3>Transforming Objects</h3>
+<p>Transforming objects through the Transform Tool generally takes place through mouse interaction with controls. Click and drag on a control and the target object transforms based on the type of control clicked.</p>
+<p>Transformations made by the tool are represented by a single matrix, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#calculatedMatrix">TransformTool.calculatedMatrix</a>. As a user interacts with controls within the Transform Tool, transforming a target object, this matrix is updated to represent the current transform of the tool. This matrix is then applied to the target. How transformations in this matrix are applied to the target object depends on the value of <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#transformMethod">TransformTool.transformMethod</a>.</p>
+<p>There are two kinds of transform methods, TRANSFORM_MATRIX and TRANSFORM_PROPERTIES. The TRANSFORM_MATRIX method takes the value of calculatedMatrix and assigns it directly to the current target's transform.matrix. This is the most compatible approach and supports all transformations possible using the various controls within the Transform Tool.</p>
+<p>The TRANSFORM_PROPERTIES approach uses DisplayObject properties over directly setting the transformation matrix. Specifically, the properties used are: width, height, and rotation. This approach does not support all types of transformations, specifically skewing. However, this approach does work play more nicely with components that expect to be resized using width and height rather than through their transformation matrix.</p>
+<p>Without using controls, you can also transform a target object through the Transform Tool by manually changing the property values of calculatedMatrix. This can be done  by directly changing the values in calculatedMatrix, or by means of helper methods like <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#setWidth()">TransformTool.setWidth()</a>, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#setHeight()">TransformTool.setHeight()</a>, and <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#setRotation()">TransformTool.setRotation()</a>. When changing calculatedMatrix directly, changes will only be applied  after <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#update()">TransformTool.update()</a> is called.</p>
+<p>[TODO: example]</p>
+<h3 id="CreatingCustomControls">Creating Custom Controls</h3>
+<h4>Custom Restrictions</h4>
+<p>Restrictions are applied to the calculatedMatrix in <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#calculateTransform">TransformTool.calculateTransform</a> method. This happens after the pre and post transforms are applied but before the registration offsets. When this happens, TransformTool dispatches a cancelable <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#RESTRICT">TransformTool.RESTRICT</a> event. Controls can listen for this event to apply their own restrictions, such as snapping, either in addition to the standard restrictions or by replacing them altogether by using Event.preventDefault() to prevent the default restriction behavior.</p>
+<p>The TransformTool class uses two methods to apply restrictions: <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#restrictScale()">TransformTool.restrictScale()</a> and <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#restrictRotation()">TransformTool.restrictRotation()</a>. Controls can choose to selectively call these in a RESTRICT handler if preventing the default behavior to apply either of those restrictions without the other. For example a control that only transforms rotation would not need to restrict scaling, so it may chose not to call restrictScale. If, however, a control that rotates does enforce restricted scaling, it would most likely not want to enforce negative scaling. The restrictScale method has an option for disabling this (enforceNegativeScaling). The reason is because rotation in affine transformations (used by Flash) uses the same values used by scaling. By restricting scale, you could inadvertently restrict rotation. Complications around this only arise for the Transform Tool, when negativeScaling is false. </p>
+<p>Consider rotating an object. If you rotate it 180 degrees, it would appear upside down. Now consider instead first scaling it negatively along its width making it a mirror image of itself, then from that position scaling it negatively along it's height. Its new position is now the same as rotating it 180 degrees. If negative scaling is restricted, this position could not be achieved meaning rotation would also be affected.</p>
+<p class="image"><img src="./senocular.com - Transform Tool Developer Guide_files/scalevsmirror.png" width="377" height="202" alt="negative scaling vs rotation"><br>
+	Scaling and rotating can result in the same transformation</p>
+<p>So when rotating and restricting, restricting scale should not enforce negative scaling allowing rotation to function properly. Controls that ship with the Transform Tool take care of this for you, but if you make your own controls, this will be something you should be aware of.</p>
+<h4>Transformation Lifecycle</h4>
+<p>There's a standard order of operations when performing transformations with the Transform Tool. These operations represent the transformation lifecycle which typically starts when you first click on a control and ends once you release that control. The operations are as follows:</p>
+<ol>
+	<li>Setup
+		<ol>
+			<li>Commit target (updating base matrix)</li>
+		</ol>
+	</li>
+	<li>Process
+		<ol>
+			<li>Transform
+				<ol>
+					<li>Define a pre or post transform</li>
+					<li>Calculate a final transformation matrix</li>
+				</ol>
+			</li>
+			<li>Update
+				<ol>
+					<li>Update Metrics</li>
+					<li>Update Target</li>
+					<li>Update Controls</li>
+				</ol>
+			</li>
+		</ol>
+	</li>
+	<li>Complete
+		<ol>
+			<li>Commit target</li>
+		</ol>
+	</li>
+</ol>
+<p>The setup step (1) happens when you first press a Transform Tool control. The TransformTool.baseMatrix is updated (1.1) to reflect the current state of the target object the tool is attached. Changes to the Transform Tool while interacting with the control are based off of this state to limit data corruption resulting from rounding errors.</p>
+<p>While interacting with a control, the process step (2) is continuously repeating. For every movement, the pre and/or post transforms of the tool are updated (2.1.1) and a final calculatedMatrix is derived using those values and the base matrix (2.1.2). Then the tool and the target object are then updated (2.2).</p>
+<p>The update process includes 3 steps. First, metric values are updated (2.2.1). These are references used to describe certain positions within the transform tool, such as the locations of the corners of the transform tool used by the controls to position themselves. Next, the target object is updated (2.2.2). This will only happen if livePreview is enabled, otherwise the target will only be updated during a commit. Finally the controls are updated (2.2.3).</p>
+<p>Once the control has been released, a final transformation is applied when the  target is committed again (3.1) with the most recent version of the calculated matrix.</p>
+<p>When defining your own controls, especially those that do not extend the ControlInteractive class, or if you're applying transforms to the Transform Tool manually, these steps will need to be followed in order for your changes to take place.</p>
+<h4>Pre and Post Transformations</h4>
+<p>Object transformations in Flash are represented by a 3x3 matrix. In ActionScript, this is accessible through DisplayObject.transform.martrix. When an object is transformed, its current transformation matrix is combined with another transformation matrix - one that represents the transform being applied. The result is a new matrix that represents a combination of both matrices.</p>
+<p>The order in which these matrices are combined can influence the outcome of the final transformation. For example, consider combining rotation and scaling on a square. If rotated first, then scaled, the final transformaiton results in what like a wide diamond. If scaled first, then rotated, the final transformation results in what looks like a rotated rectangle.</p>
+<p class="image"><img src="./senocular.com - Transform Tool Developer Guide_files/prepostscalerotate.png" width="353" height="143" alt="scale and rotate transform order"></p>
+<p>When controls within a Transform Tool apply transformations to the tool, they can control how a final transformation is calculated having contol over the order in which matrix transformations are applied.</p>
+<p>The TransformTool class uses three matrices to calculate the final transformation matrix, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#calculatedMatrix">TransformTool.calculatedMatrix</a>. They include <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#preTransform">TransformTool.preTransform</a>, <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#baseMatrix">TransformTool.baseMatrix</a>, and <a href="http://www.senocular.com/flash/tutorials/transformtool/doc/com/senocular/display/transform/TransformTool.html#postTransform">TransformTool.postTransform</a>. Each are processed in that order.</p>
+<p>The preTransform matrix is a matrix that represents the first matrix of the calculated matrix. The baseMatrix is added to this transform to start. Use preTransform for skewing and scaling - anything that should happen within the natural, un-transformed coordinate space of the target object.</p>
+<p>The baseMatrix  represents the initial state of the target object's transformation when the Transform Tool control first started applying transformations to the object. This matrix should remain unchanged, allowing other transformations to be built on top of it. </p>
+<p>The postTransform matrix is applied to the result of the combination of preTransform and baseMatrix. This transformation matrix has its transformations applied on top of those defined by the prior transformation matrices. Use this matrix for operations like rotation.</p>
+<p>&nbsp;</p>
+</div>
+</div>
+</div>
+<div class="footer-w">
+<div class="footer">
+	
+	<p class="info">Trevor McCauley ©2009 <a href="http://www.senocular.com/rss/"><img src="./senocular.com - Transform Tool Developer Guide_files/feed.png" alt="RSS Feed"></a><br>
+	The views presented on this site are mine alone and do not represent my employers, Adobe Systems Inc.</p>
+
+</div>
+</div>
+
+</body></html>
