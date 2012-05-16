@@ -21,7 +21,10 @@
 	
 	import flash.display.*;
 	import flash.errors.IOError;
-	import flash.events.*;
+	import flash.events.MouseEvent;
+	import flash.events.Event;
+	import flash.events.ProgressEvent;
+	import flash.events.IOErrorEvent;
 	import flash.external.ExternalInterface;
 	import flash.filters.DropShadowFilter;
 	import flash.geom.*;
@@ -31,6 +34,7 @@
 	import flash.text.*;
 	import flash.ui.*;
 	import flash.utils.*;
+	import flash.system.LoaderContext;
 	
 	import infinitech.ui.scrollFrame.*;
 	import infinitech.visual.*;
@@ -115,8 +119,6 @@
 		private var textIsOn:Boolean;
 		private var currentShape:String;
 		
-
-		
 		private var currentWeight:Number;
 		private var currentPersonsCount:uint;
 		
@@ -153,7 +155,7 @@
 			}
 			catch(e:Error){
 				var msg:String = "Ошибка парсинга в initialize(). Некорректный JSON.";
-				ExternalInterface.call("onError", msg);
+				////////ExternalInterface.call("alert", msg);
 			}
 			
 			weightsList = d.weightsList;
@@ -175,14 +177,14 @@
 			var numElements:uint;
 			// Для каждого переданного селектора
 			for(var sel:uint = 0; sel < decoSelectorsNum; sel++){
-				numElements = decoSelectorsData[sel].deco.length;
+				numElements = decoSelectorsData[sel].length;
 				// Сохраняем в контейнере ссылку на очищающую его кнопку
 				topDecoChoserContainers[sel].clearButton = clearTopDecoButtons[sel];
 				for(var el:uint = 0; el < numElements; el ++){
-					topDecoChoserContainers[sel].urls.push(decoSelectorsData[sel].deco[el].url);
-					topDecoChoserContainers[sel].descriptions.push(decoSelectorsData[sel].deco[el].description);
-					topDecoChoserContainers[sel].types.push(decoSelectorsData[sel].deco[el].name);
-					topDecoChoserContainers[sel].autorotates.push(decoSelectorsData[sel].deco[el].autorotate);
+					topDecoChoserContainers[sel].urls.push(decoSelectorsData[sel][el].url);
+					topDecoChoserContainers[sel].descriptions.push(decoSelectorsData[sel][el].description);
+					topDecoChoserContainers[sel].types.push(decoSelectorsData[sel][el].name);
+					topDecoChoserContainers[sel].autorotates.push(decoSelectorsData[sel][el].autorotate);
 				}		
 			}
 			setUI();
@@ -209,62 +211,75 @@
 		}
 	
 		public function loadCakePreset(data:String):void{
-			try{
-				var d:Object = JSON.decode(data);
-			}
-			catch(e:Error){
-				var msg:String = "Ошибка парсинга в loadCakePreset(). Некорректный JSON.";
-				ExternalInterface.call("onError", msg);
-				data = '{"content":{"base_color":-1},"dimensions":{"persons_count":6,"ratio":0.6,"mass":1,"shape":"rect"}}';
-				d = JSON.decode(data);
+			var parsedData:Object = null;
+						
+			try {
+				parsedData = JSON.decode(data);
+			} catch(error:Error){
+				parsedData = JSON.decode('{"content":{"base_color":-1},"dimensions":{"persons_count":6,"ratio":0.6,"mass":1,"shape":"round"}}');
 			}
 
 			if(curDragDecoElement != null){
 				curDragDecoElement = null;
 			}
-			setScaleFactor(d.dimensions.ratio);
-			updateWeightChoser();
-
-			reshape(d.dimensions.shape);
+						
+			setScaleFactor(parsedData.dimensions.ratio);
+			updateWeightChoser();			
+			reshape(parsedData.dimensions.shape);
 			updateShapeSelector();
 
-			if(!isNaN(d.content.base_color)){
-				setCakeBaseColor(d.content.base_color);
+			if (!isNaN(parsedData.content.base_color)){
+				setCakeBaseColor(parsedData.content.base_color);
 			}
 			
-			if(d.content.photo != null){
-				imageSource = d.content.photo.image_source;
-				imageTransformationMatrix = arrayToMatrix(d.content.photo.transform);
+			if (parsedData.content.photo != null){
+				imageSource = parsedData.content.photo.image_source;
+				imageTransformationMatrix = arrayToMatrix(parsedData.content.photo.transform);
 				if(imageSource == CakeImageData.NETWORK_IMAGE_SOURCE){
-					loadExternalImage(d.content.photo.photo_url);
+					loadExternalImage(parsedData.content.photo.photo_url);
 				}
 			}
 			
-			if(d.content.text != null){
-				textControls.setText(d.content.text.value, d.content.text.font, d.content.text.size, d.content.text.color);
-				writingTransformationMatrix = arrayToMatrix(d.content.text.transform);
+			if (parsedData.content.text != null){
+				textControls.setText(unescape(parsedData.content.text.value), 
+									 parsedData.content.text.font, 
+									 parsedData.content.text.size, 
+									 parsedData.content.text.color);
+									 
+				writingTransformationMatrix = arrayToMatrix(parsedData.content.text.transform);
 				topTextContainer.transform.matrix = writingTransformationMatrix;
 			}
 			
-			if(d.content.deco != null){
-				for(var i:uint = 0; i < d.content.deco.length; i++){
-					var type = d.content.deco[i].name;
+			if (parsedData.content.deco != null){
+				
+				for(var i:uint = 0; i < parsedData.content.deco.length; i++){
+					var type = parsedData.content.deco[i].name;
 					var selector = getElementSelectorByType(type);
-					var decoElementSource:DecoElement = getDecoElementInSelectorByType(type, selector);					
+					var decoElementSource:DecoElement = getDecoElementInSelectorByType(type, selector);
+					
 					curDragDecoElement = new DecoElement(type, null, null, decoElementSource);
 					curDragDecoElement.setChoserContainer(selector);
 					topDecoContainer.addChild(curDragDecoElement);
-					curDragDecoElement.transform.matrix = arrayToMatrix(d.content.deco[i].transform);
-					curDragDecoElement.getImage().scaleX = curDragDecoElement.getImage().scaleY = scaleFactor;
+					curDragDecoElement.transform.matrix = arrayToMatrix(parsedData.content.deco[i].transform);
+					
+					var image:Sprite = curDragDecoElement.getImage();
+					try {
+						image.scaleX = 
+						image.scaleY = scaleFactor;
+					} catch (error:Error) {
+						ExternalInterface.call('alert', error.toString());
+					}
+					
+					
 					curDragDecoElement.filters = [dsf];
+					
 					DragAndDrop.activate(curDragDecoElement, true, true, true, null, null, null, onGrabTopDecoFunc, onDragTopDecoFunc, onDropTopDecoFunc);
 					curDecoElements.push(curDragDecoElement);
 					selector.elementsInUse.push(curDragDecoElement);
 					enableDashedBtn(selector.clearButton);
 				}
-				var p:Array = curDecoElements.join(",").split(",");
-				ExternalInterface.call("onElementAdded", CakeData.PRESET, p);
-				trace("Added from preset:  [" + p + "]");
+				
+				//ExternalInterface.call("onElementAdded", CakeData.PRESET, curDecoElements);
 			}
 		}
 		
@@ -339,7 +354,7 @@
 			else{
 				trace("В reshape() передано недопустимое значение формы: " + shape);
 				var msg:String = "Передано недопустимое значение формы: " + shape + ". Допускаются только следующие значения: " + CakeData.ROUNDED + ", " + CakeData.RECT;
-				ExternalInterface.call("onError", msg);
+				////////ExternalInterface.call("alert", msg);
 			}
 		}
 		
@@ -506,6 +521,7 @@
 			loader.contentLoaderInfo.addEventListener(Event.INIT, onFileLoadComplete);
 			loader.contentLoaderInfo.addEventListener(ProgressEvent.PROGRESS, onFileLoadProgress);
 			loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onIoError);
+
 			disableDashedBtn(removeImageBtn);
 		}
 		
@@ -626,6 +642,9 @@
 					break;
 				}
 			}
+			
+			currentWeight = currentItem.weight;
+			currentPersonsCount = currentItem.persons;			
 		}
 		
 		private function onWeightChange(evt:Event){
@@ -640,17 +659,16 @@
 		}
 		
 		public function setCakeBaseColor(color:Number){
-			if(color > 0){
+			if (color > 0){
 				cakeBase.setColor(color);
+				
 				currentColor = color;
 				colorIsOn = true;
 				enableDashedBtn(removeColorBtn);
-				trace("added:  " + CakeData.COLOR);
+				
 				ExternalInterface.call("onElementAdded", CakeData.COLOR);
-			}
-			else{
+			} else {
 				clearCakeBaseColor();
-				trace("removed:  " + CakeData.COLOR);
 				ExternalInterface.call("onElementRemoved", CakeData.COLOR);
 			}
 		}
@@ -665,7 +683,7 @@
 		}
 		
 		// Устанавливает элемент для выбора. Принимает массив элементов для прокрутки и ссылку на контейнер
-		private function setChoser(objectsToChose:Array, container:MovieClip):ScrollFrameController{
+		private function setChoser(objectsToChose:Array, container:MovieClip):ScrollFrameController {
 			var prevBtn:SimpleButton;
 			var nextBtn:SimpleButton;
 			var choser:ScrollFrameController;
@@ -939,7 +957,11 @@
 			imageSource = CakeImageData.NETWORK_IMAGE_SOURCE;
 			removeImage();
 			imageURL = url;
-			loader.load(new URLRequest(url));
+			
+			var context:LoaderContext = new LoaderContext();
+			context.checkPolicyFile = true;
+			
+			loader.load(new URLRequest(url), context);
 			
 		}
 		
@@ -1006,6 +1028,8 @@
 			if(loadingIndicator != null){// При открытии файла из файловой системы индикатора не будет, т.к. onFileLoadStart не вызывается
 				TweenLite.to(loadingIndicator, 1, {alpha:0});
 			}
+			
+			try {
 			var msg:String = "";
 			if(evt.currentTarget.content.width > CakeData.IMAGE_DIMENSIONS_LIMIT && evt.currentTarget.content.height > CakeData.IMAGE_DIMENSIONS_LIMIT){
 				msg = "Выбранное изображение имеет недопустимые размеры: " + evt.currentTarget.content.width + "x" + evt.currentTarget.content.height + "px. Сторона не может быть больше " + CakeData.IMAGE_DIMENSIONS_LIMIT +"px";
@@ -1048,6 +1072,9 @@
 				trace("added:  " + CakeData.IMAGE);
 				ExternalInterface.call("onElementAdded", CakeData.IMAGE);
 			}
+			} catch (error:Error) {
+				ExternalInterface.call('alert', error.toString());
+			}
 			// Если размеры картинки превышают допустимые, удаляем ее
 			if (msg != ""){
 				removeImage();
@@ -1058,7 +1085,7 @@
 		
 		private function onIoError(evt:IOErrorEvent){
 			trace(evt.text);
-			ExternalInterface.call("onError", evt.text);
+			//////ExternalInterface.call("alert", evt.text);
 		}
 		
 		private function onRemoveColorBtnClick(evt:MouseEvent){
@@ -1174,17 +1201,22 @@
 			var m:Matrix = new Matrix();
 			m.translate(-cakeBase.x + offset, -cakeBase.y + offset / 3);
 			bd.draw(fullImage, m);
-			var JPEGEncoder:JPGEncoder = new JPGEncoder(100);
-			var JPEGBytes:ByteArray = JPEGEncoder.encode(bd);
+			var jpgEncoder:JPGEncoder = new JPGEncoder(70);
+			var jpgBytes:ByteArray = jpgEncoder.encode(bd);
 			// Возвращаем клип с тортом обратно в его контейнер
 			addChild(cakeBase);
 			// Восстанавливаем объект инструмента трансформации
 			setTransformTool();
-			return JPEGBytes;
+			return jpgBytes;
 		}
 		
+		
+		public function getCakeWeight():Number {
+			return currentWeight;
+		};
+		
 		// Данные о растре нужны только при сохранении. При изменении состояния достаточно только JSON состояния
-		public function getCakeData():Array{
+		public function getCakeData():Object {
 			var cd:Object = {};
 			cd.dimensions = {};
 			cd.content = {};
@@ -1209,10 +1241,10 @@
 				// Картинка была загружена пользователем
 				if(imageSource == CakeImageData.USER_IMAGE_SOURCE){
 					//var bytes:ByteArray = sourceBitmapData.getPixels(sourceBitmapData.rect);
-					var JPEGEncoder:JPGEncoder = new JPGEncoder(100);
-					var JPEGBytes:ByteArray = JPEGEncoder.encode(sourceBitmapData);
+					var jpgEncoder:JPGEncoder = new JPGEncoder(70);
+					var jpgBytes:ByteArray = jpgEncoder.encode(sourceBitmapData);
 					//originalImageBase64 = Base64.encode(bytes);
-					originalImageBase64 = Base64.encode(JPEGBytes);
+					originalImageBase64 = Base64.encode(jpgBytes);
 					//
 //					var l:Loader = new Loader();
 //					l.loadBytes(JPEGBytes);
@@ -1231,7 +1263,7 @@
 			
 			if(textIsOn){
 				cd.content.text = {};				
-				cd.content.text.value = textControls.getText();
+				cd.content.text.value = escape(textControls.getText());
 				cd.content.text.font = textControls.getFont();
 				cd.content.text.size = textControls.getSize();
 				cd.content.text.color = textControls.getColor();
@@ -1248,10 +1280,14 @@
 					cd.content.deco.push(del);
 				}
 			}
-			var cdJSON:String = JSON.encode(cd);
-			//trace(cdJSON);
-			//ExternalInterface.call("saveCakeData", cdJSON, cakeSnapshotBase64, originalImageBase64);
-			return [cdJSON, cakeSnapshotBase64, originalImageBase64];
+
+			return {
+				shape: currentShape,
+				weight: currentWeight,
+				markup: JSON.encode(cd), 
+				image: cakeSnapshotBase64, 
+				photo: originalImageBase64
+			};
 		}
 	}
 }

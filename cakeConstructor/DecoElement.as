@@ -5,6 +5,7 @@
 	import flash.events.Event;
 	import flash.net.*;
 	import flash.utils.getQualifiedClassName;
+	import flash.system.LoaderContext;
 	
 	import infinitech.visual.DisplayObjectTools;
 	
@@ -37,13 +38,17 @@
 			else{
 				_info = info;
 			}
+			var context:LoaderContext = new LoaderContext();
+			context.checkPolicyFile = true;
+			
 			_plate = new Plate();			
 			_plate.getChildAt(0).x -= .5 * _plate.width;
 			_plate.getChildAt(0).y -= .5 * _plate.height;
 			if(url != null){
 				_image = new Sprite();
+			
 				_loader = new Loader();
-				_loader.load(new URLRequest(url));
+				_loader.load(new URLRequest(url), context);
 				_loader.contentLoaderInfo.addEventListener(Event.OPEN, onImageLoadStart);
 				_loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onImageLoadComplete);
 				
